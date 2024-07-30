@@ -1,0 +1,26 @@
+logging.level.root: INFO
+
+demo:
+  web3:
+    wallet-private-key: 503f38a9c967ed597e47fe25643985f032b072db8075426a92110f82df48dfcb
+  download:
+    test: "hello"
+    payment-token-address: "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
+    payment-per-byte: 1000000000000
+    payment-fixed: 1000000
+    # Uses the parse of Duration (https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html)
+    pre-image-validity: PT2H
+
+spring:
+  jpa:
+    open-in-view: false
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+server:
+  compression:
+    enabled: true
+    min-response-size: 10240 # 10kb
+    mime-types: plain/text,text/html,text/css,application/javascript,application/json

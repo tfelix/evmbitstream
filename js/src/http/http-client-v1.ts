@@ -1,9 +1,14 @@
 import { UrlBuilder } from "./url-builder";
 
+export type Hex = `0x${string}`;
+
 export interface Bitstream {
   data: Blob,
-  paymentHash: string;
-  signature: string;
+  paymentHash: Hex;
+  signature: Hex;
+  mime: string;
+  paymentAmount: string;
+  filename: string;
 }
 
 export class HttpClientV1 {
@@ -18,14 +23,20 @@ export class HttpClientV1 {
     const url = this.urlBuilder.buildDownloadUrl(fileId);
 
     const r = await fetch(url);
-    const paymentHash = this.getHeader(r, 'X-Payment-Hash');
-    const signature = this.getHeader(r, 'X-Bitstream-Signature');
+    const paymentHash = this.getHeader(r, 'X-Payment-Hash') as Hex;
+    const signature = this.getHeader(r, 'X-Bitstream-Signature') as Hex;
+    const mime = this.getHeader(r, "X-Bitstream-File-Mime");
+    const paymentAmount = this.getHeader(r, "X-Bitstream-Amount");
+    const filename = this.getHeader(r, "X-Bitstream-File-Name");
     const data = await r.blob();
 
     return ({
       paymentHash,
       data,
-      signature
+      signature,
+      mime,
+      paymentAmount,
+      filename
     });
   }
 
