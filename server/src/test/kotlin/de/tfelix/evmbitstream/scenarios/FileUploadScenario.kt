@@ -29,6 +29,17 @@ import java.security.MessageDigest
  * Server collects user funds, must wait n blocks
  * User has time to raise fraud proof during n blocks
  *
+ * User sends payment:
+ *
+ *  user balance, server balance
+ *  user-signature
+ *
+ * Server sends invoice with payment hash (hash(preimage))
+ * User offers HTLC to Server
+ * User and Server exchange commitments and revocations adding the HTLC to their commitments of TXs
+ * Server sends payment preimage to Alice
+ * User and Server exchange commitments and revocations removing HTLC and updating channel balances
+ *
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class FileUploadAndDownloadScenario : BaseMVCScenario() {
@@ -101,7 +112,7 @@ class FileUploadAndDownloadScenario : BaseMVCScenario() {
             .andExpect(header().exists("X-Bitstream-Pay-Hash"))
             .andExpect(header().string("X-Bitstream-File-Mime", "text/plain"))
             // 13 bytes of data with the minimum amount is this value
-            .andExpect(header().string("X-Bitstream-Amount", "300000000000000000"))
+            .andExpect(header().string("X-Bitstream-Amount", "13000001000000"))
             .andExpect(header().string("X-Bitstream-File-Name", "hello.txt"))
 
         val response = a.andReturn().response
