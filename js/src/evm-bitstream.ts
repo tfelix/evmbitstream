@@ -1,5 +1,4 @@
-import { bytesToHex, hexToBytes, hexToString, recoverMessageAddress } from 'viem';
-import { sha256 } from '@noble/hashes/sha256';
+import { bytesToHex, hexToBytes, recoverMessageAddress } from 'viem';
 
 import { HttpClientV1 } from './http/http-client-v1';
 import { BitstreamException, ErrorCodes } from './bitstream-exception';

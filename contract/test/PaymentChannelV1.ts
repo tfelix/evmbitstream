@@ -3,7 +3,7 @@ import {
 } from "@nomicfoundation/hardhat-toolbox-viem/network-helpers";
 import { expect } from "chai";
 import hre from "hardhat";
-import { zeroAddress, WalletClient, Address, Account } from "viem";
+import { zeroAddress, WalletClient, Address, Account, keccak256, toHex, toBytes, pad } from "viem";
 
 const channelId1 = "0xade0e4dd0af1150aace568c765e5a21f34d7e8fd1b7615cc83146ada7e9e0b75";
 
@@ -55,7 +55,9 @@ describe("PaymentChannelV1", function () {
     server: WalletClient,
     client: WalletClient,
     serverBalance: bigint,
-    clientBalance: bigint
+    clientBalance: bigint,
+    inflightBalance: bigint = 0n,
+    sequence: bigint = 0n
   ) {
 
     // Prepare the signature
@@ -63,7 +65,7 @@ describe("PaymentChannelV1", function () {
     const domain = {
       name: "EVMBitstream", // Name of your DApp
       version: "1",   // Version
-      chainId: 1,     // Mainnet chain ID
+      chainId: client.chain?.id,
       verifyingContract: contractAddress,
     };
 
@@ -73,6 +75,9 @@ describe("PaymentChannelV1", function () {
         { name: "channelId", type: "bytes32" },
         { name: "serverAmount", type: "uint256" },
         { name: "clientAmount", type: "uint256" },
+        { name: "inflightAmount", type: "uint256" },
+        // { name: "inflightSecret", type: "bytes32" },
+        { name: "sequence", type: "uint256" },
       ],
     };
 
@@ -83,9 +88,13 @@ describe("PaymentChannelV1", function () {
       message: {
         channelId: channelId1,
         serverAmount: serverBalance,
-        clientAmount: clientBalance
+        clientAmount: clientBalance,
+        inflightAmount: inflightBalance,
+        sequence: sequence,
       },
     };
+
+    console.log("Typed Data", typedData);
 
     // Must be cast to any as TS type system can not match it otherwise to signTypedData
     const clientSignature = await client.signTypedData(typedData as any);
@@ -265,34 +274,57 @@ describe("PaymentChannelV1", function () {
       // TODO check for the ChannelClose event when chai matchers work with viem
     });
 
-    xit("closes the channel when server requests it and signatures are valid", async function () {
-      /*const { sut, server } = await loadFixture(deployFixture);
+    it("closes the channel when server requests it and signatures are valid", async function () {
+      const { sut, erc20, client, server } = await loadFixture(deployFixture);
 
-      await createChannel();
+      await createChannel(
+        sut,
+        erc20,
+        server.account,
+        client.account,
+        100n
+      );
 
-      const { serverSignature, clientSignature } = await createChannelCloseSig(30n, 70n);
+      const { serverSignature, clientSignature } = await createChannelCloseSig(
+        sut.address,
+        server,
+        client,
+        30n,
+        70n
+      );
 
       await sut.write.closeChannel([channelId1, 30n, 70n, serverSignature, clientSignature], { account: server.account });
 
-      // TODO check for the ChannelClose event when chai matchers work with viem*/
+      // TODO check for the ChannelClose event when chai matchers work with viem
     });
 
-    xit("pays out the agreed token balance", async function () {
-      const { sut, server, client, erc20 } = await loadFixture(deployFixture);
+    it("pays out the agreed token balance", async function () {
+      const { sut, erc20, client, server } = await loadFixture(deployFixture);
 
-      // await createChannel();
+      await createChannel(
+        sut,
+        erc20,
+        server.account,
+        client.account,
+        100n
+      );
 
-      // const { serverSignature, clientSignature } = await createChannelCloseSig(30n, 70n);
+      const { serverSignature, clientSignature } = await createChannelCloseSig(
+        sut.address,
+        server,
+        client,
+        30n,
+        70n
+      );
 
-      /*
-      await sut.write.closeChannel([channelId1, 30n, 70n, serverSignature, clientSignature], { account: client.account });
+      await sut.write.closeChannel([channelId1, 30n, 70n, serverSignature, clientSignature], { account: server.account });
 
       expect(await erc20.read.balanceOf([client.account.address])).to.eq(9_970n);
       expect(await erc20.read.balanceOf([server.account.address])).to.eq(30n);
-      expect(await erc20.read.balanceOf([sut.address])).to.eq(0n);*/
+      expect(await erc20.read.balanceOf([sut.address])).to.eq(0n);
     });
 
-    describe("Validations", function () {
+    xdescribe("Validations", function () {
       it("Reverts if channel does not exist", async function () {
 
       });
@@ -308,10 +340,78 @@ describe("PaymentChannelV1", function () {
       it("Reverts if server and client amount does not match channel balance", async function () {
 
       });
+
+      it("Reverts if called from neither server nor client", async function () {
+
+      });
     });
 
     xdescribe("Events", function () {
       // TODO we can not check this as chai matcher wont work with viem.
+    });
+  });
+
+  describe("forceCloseChannel", function () {
+
+    it("force closes the channel when client requests it and signatures are valid", async function () {
+      const { sut, erc20, client, server } = await loadFixture(deployFixture);
+
+      await createChannel(
+        sut,
+        erc20,
+        server.account,
+        client.account,
+        100n
+      );
+
+      const { serverSignature, clientSignature } = await createChannelCloseSig(
+        sut.address,
+        server,
+        client,
+        20n,
+        70n,
+        10n,
+        3n
+      );
+
+      await sut.write.forceCloseChannel([{
+        channelId: channelId1,
+        serverAmount: 20n,
+        clientAmount: 70n,
+        inflightAmount: 10n,
+        sequence: 3n
+      }, clientSignature, serverSignature], { account: server.account });
+
+      // No payments should have happened yet.
+      expect(await erc20.read.balanceOf([client.account.address])).to.eq(9_900n);
+      expect(await erc20.read.balanceOf([server.account.address])).to.eq(0n);
+      expect(await erc20.read.balanceOf([sut.address])).to.eq(100n);
+    });
+
+    xdescribe("Validations", function () {
+      it("Reverts if channel does not exist", async function () {
+
+      });
+
+      it("Reverts if called from neither server nor client", async function () {
+
+      });
+
+      it("Reverts if client signature is invalid", async function () {
+
+      });
+
+      it("Reverts if server signature is invalid", async function () {
+
+      });
+
+      it("Reverts if server and client amount does not match channel balance", async function () {
+
+      });
+
+      it("Reverts if channel is already in foced closure state", async function () {
+
+      });
     });
   });
 });
