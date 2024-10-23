@@ -3,10 +3,9 @@ package de.tfelix.evmbitstream.scenarios
 import de.tfelix.evmbitstream.bitstream.BitstreamDecrypt
 import de.tfelix.evmbitstream.bitstream.FileChunkSplitter
 import de.tfelix.evmbitstream.bitstream.Sha256MerkleTree
-import de.tfelix.evmbitstream.blockchain.MockPaymentContract
+import de.tfelix.evmbitstream.blockchain.MockPaymentChannel
 import de.tfelix.evmbitstream.util.toHex
 import de.tfelix.evmbitstream.blockchain.Wallet
-import de.tfelix.evmbitstream.payment.PaymentCollectorService
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -54,10 +53,7 @@ class FileUploadAndDownloadScenario : BaseMVCScenario() {
     private lateinit var wallet: Wallet
 
     @Autowired
-    private lateinit var paymentCollectorService: PaymentCollectorService
-
-    @Autowired
-    private lateinit var paymentContract: MockPaymentContract
+    private lateinit var paymentContract: MockPaymentChannel
 
     @Autowired
     private lateinit var bitstreamDecrypt: BitstreamDecrypt
@@ -122,18 +118,15 @@ class FileUploadAndDownloadScenario : BaseMVCScenario() {
         val serverSignature = response.getHeader("X-Bitstream-Sig")!!
         paymentHash = response.getHeader("X-Bitstream-Pay-Hash")
 
-        // Verify file id
-        val chunks = chunkSplitter.splitFileIntoChunks(ByteArrayInputStream(fileContent)).toList()
-        val chunkHashes = chunks.filterIndexed { index, _ -> index % 2 == 0 }
-
-        // Children are already hashed, so we don't need to hash them again.
-        val responseFileId = merkleTree.getRoot(chunkHashes).toHex()
+        val responseFileId = TestFileIdCalculator.calculateFileId(fileContent!!)
 
         Assertions.assertEquals(expectedFileId, responseFileId)
 
         // Verify server signature claim
+        val chunks = TestFileIdCalculator.getChunks(fileContent!!)
         val encryptionId = merkleTree.getRoot(chunks).toHex()
         val claim = Numeric.hexStringToByteArray(encryptionId) + Numeric.hexStringToByteArray(paymentHash)
+
         val isSigValid = wallet.isValidSignature(serverSignature, claim.toHex())
         Assertions.assertTrue(isSigValid, "Signature is not valid")
     }
@@ -142,9 +135,6 @@ class FileUploadAndDownloadScenario : BaseMVCScenario() {
     @Order(5)
     fun `when server detects client payment it releases the preimage of the file`() {
         paymentContract.clear()
-
-        // We "perform" the payment by simulating the events.
-        paymentCollectorService.collectPayment(paymentHash!!, amount!!)
 
         val preimage = paymentContract.getCollectedPayments().last()
 

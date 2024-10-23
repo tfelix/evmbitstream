@@ -1,7 +1,7 @@
 package de.tfelix.evmbitstream.bitstream.signature
 
 interface Signer {
-    fun sign(messageBytes: ByteArray): ByteArray
+    fun sign(message: ByteArray): Signature
     fun address(): String
 }
 

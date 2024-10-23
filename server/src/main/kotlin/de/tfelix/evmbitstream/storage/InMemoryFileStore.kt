@@ -2,7 +2,6 @@ package de.tfelix.evmbitstream.storage
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Component
-import java.io.IOException
 
 private val log = KotlinLogging.logger { }
 
@@ -30,6 +29,7 @@ class InMemoryFileStore : FileStore {
     }
 
     private fun throwNotFound(fileId: String): Nothing {
-        throw IOException("File with ID $fileId not found")
+        throw FileNotFoundException(fileId)
     }
 }
+

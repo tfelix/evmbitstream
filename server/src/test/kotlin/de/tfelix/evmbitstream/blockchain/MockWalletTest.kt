@@ -1,5 +1,6 @@
 package de.tfelix.evmbitstream.blockchain
 
+import de.tfelix.evmbitstream.util.toHex
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
@@ -10,8 +11,11 @@ class MockWalletTest {
     @Test
     fun `sign is producing valid signatures`() {
         val message = "Hello World-Test 123"
-        val signature = sut.sign(message)
+        val signature = sut.sign(message).toByteArray().toHex()
 
-        assertTrue(sut.isValidSignature(signature, message))
+        assertEquals(
+            "0x22b20d22239d49d34c3e1e19829ff6f92dcfd67310d4b5bdd6d4c7556584ee8732c06e21010e91386c1ca49c7662fe968a8ebbed8af3458928a361890d1bea281b",
+            signature
+        )
     }
 }

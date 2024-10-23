@@ -59,10 +59,10 @@ class BitstreamEncrypt(
         val claim = encryptedId + preImageData.preImageHash
         val signature = signer.sign(claim)
 
-        log.debug { "Signature: ${signature.toHex()}" }
+        log.debug { "Signature: ${signature.toByteArray()}" }
 
         return EncryptedFile(
-            signature = signature,
+            signature = signature.toByteArray(),
             encryptedId = encryptedId,
             encryptedFile = concatByteArrays(encryptedFile)
         )

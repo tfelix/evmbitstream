@@ -10,23 +10,18 @@ private val log = KotlinLogging.logger { }
 class ECDSASigner(
     private val credentials: Credentials
 ) : Signer {
-    override fun sign(messageBytes: ByteArray): ByteArray {
-        val signature = Sign.signPrefixedMessage(messageBytes, credentials.ecKeyPair)
 
-        val value = ByteArray(65)
-        System.arraycopy(signature.r, 0, value, 0, 32)
-        System.arraycopy(signature.s, 0, value, 32, 32)
-        System.arraycopy(signature.v, 0, value, 64, 1)
+    constructor(privateKey: String) : this(Credentials.create(privateKey))
+
+    override fun sign(message: ByteArray): Signature {
+        val signatureValue = Sign.signPrefixedMessage(message, credentials.ecKeyPair)
+        val signature = Signature.fromSignatureData(signatureValue)
 
         log.debug {
-            "Signed Message: ${Numeric.toHexString(messageBytes)} with signature: ${
-                Numeric.toHexString(
-                    value
-                )
-            }"
+            "Signed Message: ${Numeric.toHexString(message)} with signature: $signature"
         }
 
-        return value
+        return signature
     }
 
     override fun address(): String {

@@ -1,5 +1,6 @@
 package de.tfelix.evmbitstream.bitstream.signature
 
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.web3j.crypto.Credentials
@@ -16,8 +17,8 @@ class ECDSASignerTest {
         val signature = sut.sign(message)
 
         val verifier = ECDSAVerifier()
-        val result = verifier.isValidSignature(signature, message, "0x5b38da6a701c568545dcfcb03fcb875f56beddc4")
+        val signerAddr = verifier.getSigningAddress(signature, message)
 
-        assertTrue(result)
+        assertEquals("0x5b38da6a701c568545dcfcb03fcb875f56beddc4", signerAddr)
     }
 }

@@ -10,13 +10,13 @@ import java.security.MessageDigest
 @Entity
 @Table(
     indexes = [
-        Index(columnList = "preImage", unique = true),
+        Index(columnList = "preimage", unique = true),
         Index(columnList = "hash", unique = true)
     ]
 )
 class PreImagePayment(
     @Column(nullable = false)
-    val preImage: String,
+    val preimage: String,
 
     @Column(nullable = false)
     val hash: String,
@@ -26,23 +26,24 @@ class PreImagePayment(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long? = null
+    val id: Long = 0
 ) {
 
     fun getPreImageAsByteArray(): ByteArray {
-        return Numeric.hexStringToByteArray(preImage)
+        return Numeric.hexStringToByteArray(preimage)
     }
 
     fun getHashAsByteArray(): ByteArray {
         return Numeric.hexStringToByteArray(hash)
     }
 
+    @PrePersist
     fun verifyPreImage() {
-        val dataBytes = Numeric.hexStringToByteArray(preImage)
+        val dataBytes = Numeric.hexStringToByteArray(preimage)
         val hashedPreImage = HASHER.digest(dataBytes).toHex()
         if (hashedPreImage != hash) {
             throw BlockchainException(
-                "Hashed preImage ($hashedPreImage) does not match saved $preImage in PreImagePayment(id=$id)"
+                "Hashed preImage ($hashedPreImage) does not match saved $preimage in PreImagePayment(id=$id)"
             )
         }
     }
@@ -52,12 +53,12 @@ class PreImagePayment(
 
         fun fromPreImage(
             preimage: ByteArray,
-            paymentAmount: BigInteger
+            paymentAmount: BigInteger,
         ): PreImagePayment {
             require(preimage.size == 32)
 
             return PreImagePayment(
-                preImage = preimage.toHex(),
+                preimage = preimage.toHex(),
                 hash = HASHER.digest(preimage).toHex(),
                 paymentAmount = paymentAmount.toString(10)
             )

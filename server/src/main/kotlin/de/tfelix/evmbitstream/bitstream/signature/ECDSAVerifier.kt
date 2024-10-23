@@ -1,39 +1,28 @@
 package de.tfelix.evmbitstream.bitstream.signature
 
+import org.springframework.stereotype.Component
 import org.web3j.crypto.Keys
 import org.web3j.crypto.Sign
 import org.web3j.crypto.Sign.SignatureData
 
+@Component
 class ECDSAVerifier : Verifier {
 
-    override fun isValidSignature(signature: ByteArray, originalMessage: ByteArray, address: String): Boolean {
-        val pubkey = extractPubKey(signature, originalMessage)
-        val signerAddress = Keys.getAddress(pubkey)
-
-        val cleanedAddress = if (address.startsWith("0x")) {
-            address.substring(2)
-        } else {
-            address
-        }
-
-        return signerAddress.equals(cleanedAddress, true)
-    }
-
-    private fun extractPubKey(signature: ByteArray, originalMessage: ByteArray): String {
-        // No need to prepend these strings with 0x because
-        // Numeric.hexStringToByteArray() accepts both formats
-        val r = signature.copyOfRange(0, 32)
-        val s = signature.copyOfRange(32, 64)
-        val v = signature.copyOfRange(64, 65)
-
+    private fun extractPubKey(signature: Signature, originalMessage: ByteArray): String {
         // Using Sign.signedPrefixedMessageToKey for EIP-712 compliant signatures.
         return Sign.signedPrefixedMessageToKey(
             originalMessage,
             SignatureData(
-                v[0],
-                r,
-                s
+                signature.v,
+                signature.r,
+                signature.s
             )
         ).toString(16)
+    }
+
+    override fun getSigningAddress(signature: Signature, message: ByteArray): String {
+        val pubkey = extractPubKey(signature, message)
+
+        return "0x" + Keys.getAddress(pubkey)
     }
 }

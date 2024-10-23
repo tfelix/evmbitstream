@@ -1,17 +1,18 @@
-package de.tfelix.evmbitstream.download
+package de.tfelix.evmbitstream.payment
 
 import org.springframework.boot.context.properties.ConfigurationProperties
-import java.math.BigDecimal
 import java.math.BigInteger
 import java.time.Duration
-import kotlin.math.pow
 
-@ConfigurationProperties(prefix = "demo.download")
-class DownloadConfig(
+@ConfigurationProperties(prefix = "demo.payment")
+class PaymentConfig(
     val paymentTokenAddress: String,
     val paymentPerByte: BigInteger,
     val paymentFixed: BigInteger,
-    val preImageValidity: String
+    preImageValidity: String,
+    minHtlcTimeout: String
 ) {
     val preImageValidityAsDuration = Duration.parse(preImageValidity)!!
+
+    val minHtlcTimeoutAsDuration = Duration.parse(minHtlcTimeout)!!
 }

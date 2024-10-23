@@ -75,9 +75,13 @@ describe("PaymentChannelV1", function () {
         { name: "channelId", type: "bytes32" },
         { name: "serverAmount", type: "uint256" },
         { name: "clientAmount", type: "uint256" },
-        { name: "inflightAmount", type: "uint256" },
-        // { name: "inflightSecret", type: "bytes32" },
+        { name: "htlc", type: "Htlc" },
         { name: "sequence", type: "uint256" },
+      ],
+      Htlc: [
+        { name: "inflightAmount", type: "uint256" },
+        { name: "lockedUntil", type: "uint256" },
+        { name: "secret", type: "bytes32" },
       ],
     };
 

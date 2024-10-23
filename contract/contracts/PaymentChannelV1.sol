@@ -77,7 +77,7 @@ contract PaymentChannelV1 is ReentrancyGuard, EIP712 {
         uint256 sequence;
     }
 
-    struct ChannelUpdate {
+    struct Htlc {
         uint256 inflightAmount;
         uint256 lockedUntil;
     }
@@ -99,6 +99,7 @@ contract PaymentChannelV1 is ReentrancyGuard, EIP712 {
     uint256 private constant FORCE_CLOSE_BLOCK_DELAY = 14_400;
 
     // 1h
+    // TODO let server decide how long for more flexibility.
     uint256 private constant SERVER_BOND_UNLOCK_DELAY = 300;
 
     constructor() EIP712("EVMBitstream", "1") {}

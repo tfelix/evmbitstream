@@ -3,6 +3,7 @@ package de.tfelix.evmbitstream.download
 import de.tfelix.evmbitstream.bitstream.BitstreamEncrypt
 import de.tfelix.evmbitstream.bitstream.EncryptedFile
 import de.tfelix.evmbitstream.payment.PaymentAmountCalculator
+import de.tfelix.evmbitstream.payment.PaymentConfig
 import de.tfelix.evmbitstream.payment.PreImagePayment
 import de.tfelix.evmbitstream.payment.PreImagePaymentRepository
 import de.tfelix.evmbitstream.storage.FileStore
@@ -14,7 +15,7 @@ import java.time.Clock
 @Service
 class DownloadService(
     private val fileStore: FileStore,
-    private val downloadConfig: DownloadConfig,
+    private val paymentConfig: PaymentConfig,
     private val paymentAmountCalculator: PaymentAmountCalculator,
     private val bitstreamEncrypt: BitstreamEncrypt,
     private val paymentRepository: PreImagePaymentRepository,
@@ -34,11 +35,11 @@ class DownloadService(
         val file = fileStore.retrieveFile(fileId)
         val encryptedFile = getEncryptedFile(file, preImagePayment)
 
-        val downloadValidUntil = clock.instant().plus(downloadConfig.preImageValidityAsDuration)
+        val downloadValidUntil = clock.instant().plus(paymentConfig.preImageValidityAsDuration)
 
         return PreparedDownload(
             preImageHash = preImagePayment.hash,
-            tokenAddress = downloadConfig.paymentTokenAddress,
+            tokenAddress = paymentConfig.paymentTokenAddress,
             expectedPaymentAmount = amount,
             validUntil = downloadValidUntil,
             download = encryptedFile,
